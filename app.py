@@ -8,6 +8,7 @@ st.title("Image ↔ Matrix Visualization (Educational Tool)")
 st.markdown("""
 Each image form is generated using a **different matrix operation**  
 and therefore has its **own valid control parameter**.
+Presented by Ms. Khyati (Assistant Professor, Parul University)
 """)
 
 # ==========================
@@ -131,4 +132,5 @@ if uploaded_file:
     - Inversion → linear combination of matrix and its complement
     - Threshold → conditional operation
     - All controls stay within valid pixel limits
+    
     """)
