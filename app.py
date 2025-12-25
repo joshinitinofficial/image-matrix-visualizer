@@ -6,10 +6,8 @@ st.set_page_config(layout="wide")
 st.title("Image ↔ Matrix Visualization (Educational Tool)")
 
 st.markdown("""
-This app demonstrates how **different matrix operations**
-produce different image forms.
-
-Each operation has its **own valid control parameter**.
+Each image form is generated using a **different matrix operation**  
+and therefore has its **own valid control parameter**.
 """)
 
 # ==========================
@@ -24,13 +22,12 @@ if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
     img_rgb = np.array(img)
 
-    # Base grayscale matrix (true mathematical matrix)
+    # Base grayscale matrix (true 2D matrix)
     base_gray = np.mean(img_rgb, axis=2).astype(np.uint8)
-
     h, w = base_gray.shape
 
     # ==========================
-    # Matrix Window Selection
+    # Matrix Window
     # ==========================
     st.subheader("Matrix Window (Real Sub-Matrix)")
 
@@ -49,7 +46,7 @@ if uploaded_file:
     # ==========================
     st.subheader("Operation Controls")
 
-    b_col, t_col = st.columns(2)
+    b_col, i_col, t_col = st.columns(3)
 
     with b_col:
         brightness_val = st.slider(
@@ -57,6 +54,14 @@ if uploaded_file:
             min_value=0,
             max_value=100,
             value=30
+        )
+
+    with i_col:
+        invert_strength = st.slider(
+            "Inversion Strength (%)",
+            min_value=0,
+            max_value=100,
+            value=100
         )
 
     with t_col:
@@ -67,11 +72,18 @@ if uploaded_file:
             value=128
         )
 
+    alpha = invert_strength / 100.0
+
     # ==========================
     # IMAGE GENERATION
     # ==========================
     bright = np.clip(base_gray + brightness_val, 0, 255).astype(np.uint8)
-    invert = 255 - base_gray
+
+    invert = np.clip(
+        (1 - alpha) * base_gray + alpha * (255 - base_gray),
+        0, 255
+    ).astype(np.uint8)
+
     threshold = np.where(base_gray > threshold_val, 255, 0).astype(np.uint8)
 
     # Corresponding matrices
@@ -103,7 +115,7 @@ if uploaded_file:
 
     with tabs[2]:
         c1, c2 = st.columns(2)
-        c1.image(invert, caption="Inverted Image", clamp=True)
+        c1.image(invert, caption="Inversion Image", clamp=True)
         c2.dataframe(invert_matrix)
 
     with tabs[3]:
@@ -115,9 +127,8 @@ if uploaded_file:
 
     st.markdown("""
     ### Teaching Notes
-    - Original image is the base matrix
-    - Brightness uses **matrix addition**
-    - Inversion is **fixed subtraction**
-    - Threshold uses **conditional logic**
-    - All parameters stay within **valid pixel limits**
+    - Brightness → matrix addition
+    - Inversion → linear combination of matrix and its complement
+    - Threshold → conditional operation
+    - All controls stay within valid pixel limits
     """)
