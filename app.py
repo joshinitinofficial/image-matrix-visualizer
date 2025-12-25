@@ -3,128 +3,117 @@ import numpy as np
 from PIL import Image
 
 st.set_page_config(layout="wide")
-st.title("Image as Matrix – Interactive Visualizer")
+st.title("Image ↔ Matrix Visualization (Educational Tool)")
 
 st.markdown("""
-This app shows how **images are matrices**.
-You can:
-- View original image
-- Inspect a **real sub-matrix**
-- Edit matrix values
-- Instantly see image changes
+This app shows **multiple images** and their **respective matrices**.
+Changing the input parameter updates **all images and matrices**.
 """)
 
-# ===============================
+# ==========================
 # Upload Image
-# ===============================
+# ==========================
 uploaded_file = st.file_uploader(
-    "Upload an image",
-    type=["jpg", "jpeg", "png"]
+    "Upload an image", type=["jpg", "jpeg", "png"]
 )
 
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
-    img_array = np.array(img)
+    img_rgb = np.array(img)
 
-    h, w, _ = img_array.shape
+    # Base grayscale matrix (true 2D matrix)
+    base_gray = np.mean(img_rgb, axis=2).astype(np.uint8)
 
-    # ===============================
-    # Show Original Image
-    # ===============================
-    st.subheader("Original Image")
-    st.image(img, use_container_width=True)
-    st.write("Image Shape:", img_array.shape)
+    h, w = base_gray.shape
 
-    st.divider()
-
-    # ===============================
+    # ==========================
     # Matrix Window Selection
-    # ===============================
-    st.subheader("Select Matrix Window (Real Image Values)")
+    # ==========================
+    st.subheader("Matrix Window (Real Sub-Matrix)")
 
     col1, col2 = st.columns(2)
 
     with col1:
         row = st.number_input(
-            "Start Row",
-            min_value=0,
-            max_value=h - 5,
-            value=0
+            "Start Row", 0, h - 5, 0
         )
-
     with col2:
         col = st.number_input(
-            "Start Column",
-            min_value=0,
-            max_value=w - 5,
-            value=0
+            "Start Column", 0, w - 5, 0
         )
 
-    # ===============================
-    # Convert to Grayscale Matrix
-    # ===============================
-    gray = np.mean(img_array, axis=2).astype(np.uint8)
+    base_matrix = base_gray[row:row+5, col:col+5]
 
-    sample_matrix = gray[row:row + 5, col:col + 5]
-
-    st.markdown("### Sample Matrix (5×5 – Grayscale)")
-    st.write("Each value = pixel intensity (0–255)")
-
-    # ===============================
-    # Editable Matrix
-    # ===============================
-    edited_matrix = st.data_editor(
-        sample_matrix,
-        use_container_width=True,
-        key="matrix_editor"
-    )
-
-    # ===============================
-    # Apply Edited Matrix Back
-    # ===============================
-    modified_gray = gray.copy()
-    modified_gray[row:row + 5, col:col + 5] = np.clip(
-        edited_matrix, 0, 255
-    )
-
-    st.divider()
-
-    # ===============================
-    # Slider Based Global Operation
-    # ===============================
-    st.subheader("Global Matrix Operation")
-
+    # ==========================
+    # Global Control Parameter
+    # ==========================
+    st.subheader("Control Parameter (Matrix Operation)")
     value = st.slider(
-        "Brightness Value (Matrix Addition)",
+        "Value (used in all operations)",
         min_value=-100,
         max_value=100,
-        value=0
+        value=30
     )
 
-    modified_gray = np.clip(modified_gray + value, 0, 255)
+    # ==========================
+    # Generate Derived Images
+    # ==========================
+    bright = np.clip(base_gray + value, 0, 255).astype(np.uint8)
+    invert = 255 - base_gray
+    threshold = np.where(base_gray > 128, 255, 0).astype(np.uint8)
 
+    bright_matrix = bright[row:row+5, col:col+5]
+    invert_matrix = invert[row:row+5, col:col+5]
+    thresh_matrix = threshold[row:row+5, col:col+5]
+
+    # ==========================
+    # DISPLAY SECTION
+    # ==========================
     st.divider()
 
-    # ===============================
-    # Show Results
-    # ===============================
-    colA, colB = st.columns(2)
+    st.subheader("Images and Their Matrices")
 
-    with colA:
-        st.subheader("Modified Image")
-        st.image(modified_gray, clamp=True)
+    tabs = st.tabs([
+        "Original",
+        "Brightness",
+        "Inversion",
+        "Threshold"
+    ])
 
-    with colB:
-        st.subheader("Difference (Matrix Effect)")
-        diff = modified_gray.astype(int) - gray.astype(int)
-        st.image(diff, clamp=True)
+    # ---------- ORIGINAL ----------
+    with tabs[0]:
+        c1, c2 = st.columns(2)
+        c1.image(base_gray, caption="Original Image", clamp=True)
+        c2.markdown("### Matrix")
+        c2.dataframe(base_matrix)
+
+    # ---------- BRIGHTNESS ----------
+    with tabs[1]:
+        c1, c2 = st.columns(2)
+        c1.image(bright, caption="Brightness Image", clamp=True)
+        c2.markdown("### Matrix")
+        c2.dataframe(bright_matrix)
+
+    # ---------- INVERSION ----------
+    with tabs[2]:
+        c1, c2 = st.columns(2)
+        c1.image(invert, caption="Inverted Image", clamp=True)
+        c2.markdown("### Matrix")
+        c2.dataframe(invert_matrix)
+
+    # ---------- THRESHOLD ----------
+    with tabs[3]:
+        c1, c2 = st.columns(2)
+        c1.image(threshold, caption="Threshold Image", clamp=True)
+        c2.markdown("### Matrix")
+        c2.dataframe(thresh_matrix)
 
     st.divider()
 
     st.markdown("""
-    ### Teaching Notes
-    - Image = matrix of numbers
-    - Editing matrix ⇒ image changes
-    - Slider = matrix addition
-    - Sub-matrix = real part of image
+    ### Teaching Summary
+    - Image = Matrix
+    - One input → many transformations
+    - Each image has its own matrix
+    - Matrices shown are **real sub-matrices**
     """)
