@@ -6,22 +6,25 @@ st.set_page_config(layout="wide")
 st.title("Image ↔ Matrix Visualization (Educational Tool)")
 
 st.markdown("""
-This app shows **multiple images** and their **respective matrices**.
-Changing the input parameter updates **all images and matrices**.
+This app demonstrates how **different matrix operations**
+produce different image forms.
+
+Each operation has its **own valid control parameter**.
 """)
 
 # ==========================
 # Upload Image
 # ==========================
 uploaded_file = st.file_uploader(
-    "Upload an image", type=["jpg", "jpeg", "png"]
+    "Upload an image",
+    type=["jpg", "jpeg", "png"]
 )
 
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
     img_rgb = np.array(img)
 
-    # Base grayscale matrix (true 2D matrix)
+    # Base grayscale matrix (true mathematical matrix)
     base_gray = np.mean(img_rgb, axis=2).astype(np.uint8)
 
     h, w = base_gray.shape
@@ -31,46 +34,54 @@ if uploaded_file:
     # ==========================
     st.subheader("Matrix Window (Real Sub-Matrix)")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        row = st.number_input(
-            "Start Row", 0, h - 5, 0
-        )
-    with col2:
-        col = st.number_input(
-            "Start Column", 0, w - 5, 0
-        )
+    c1, c2 = st.columns(2)
+    with c1:
+        row = st.number_input("Start Row", 0, h - 5, 0)
+    with c2:
+        col = st.number_input("Start Column", 0, w - 5, 0)
 
     base_matrix = base_gray[row:row+5, col:col+5]
 
-    # ==========================
-    # Global Control Parameter
-    # ==========================
-    st.subheader("Control Parameter (Matrix Operation)")
-    value = st.slider(
-        "Value (used in all operations)",
-        min_value=-100,
-        max_value=100,
-        value=30
-    )
+    st.divider()
 
     # ==========================
-    # Generate Derived Images
+    # OPERATION CONTROLS
     # ==========================
-    bright = np.clip(base_gray + value, 0, 255).astype(np.uint8)
+    st.subheader("Operation Controls")
+
+    b_col, t_col = st.columns(2)
+
+    with b_col:
+        brightness_val = st.slider(
+            "Brightness Increase (Matrix + value)",
+            min_value=0,
+            max_value=100,
+            value=30
+        )
+
+    with t_col:
+        threshold_val = st.slider(
+            "Threshold Level (0–255)",
+            min_value=0,
+            max_value=255,
+            value=128
+        )
+
+    # ==========================
+    # IMAGE GENERATION
+    # ==========================
+    bright = np.clip(base_gray + brightness_val, 0, 255).astype(np.uint8)
     invert = 255 - base_gray
-    threshold = np.where(base_gray > 128, 255, 0).astype(np.uint8)
+    threshold = np.where(base_gray > threshold_val, 255, 0).astype(np.uint8)
 
+    # Corresponding matrices
     bright_matrix = bright[row:row+5, col:col+5]
     invert_matrix = invert[row:row+5, col:col+5]
     thresh_matrix = threshold[row:row+5, col:col+5]
 
     # ==========================
-    # DISPLAY SECTION
+    # DISPLAY
     # ==========================
-    st.divider()
-
     st.subheader("Images and Their Matrices")
 
     tabs = st.tabs([
@@ -80,40 +91,33 @@ if uploaded_file:
         "Threshold"
     ])
 
-    # ---------- ORIGINAL ----------
     with tabs[0]:
         c1, c2 = st.columns(2)
         c1.image(base_gray, caption="Original Image", clamp=True)
-        c2.markdown("### Matrix")
         c2.dataframe(base_matrix)
 
-    # ---------- BRIGHTNESS ----------
     with tabs[1]:
         c1, c2 = st.columns(2)
         c1.image(bright, caption="Brightness Image", clamp=True)
-        c2.markdown("### Matrix")
         c2.dataframe(bright_matrix)
 
-    # ---------- INVERSION ----------
     with tabs[2]:
         c1, c2 = st.columns(2)
         c1.image(invert, caption="Inverted Image", clamp=True)
-        c2.markdown("### Matrix")
         c2.dataframe(invert_matrix)
 
-    # ---------- THRESHOLD ----------
     with tabs[3]:
         c1, c2 = st.columns(2)
         c1.image(threshold, caption="Threshold Image", clamp=True)
-        c2.markdown("### Matrix")
         c2.dataframe(thresh_matrix)
 
     st.divider()
 
     st.markdown("""
-    ### Teaching Summary
-    - Image = Matrix
-    - One input → many transformations
-    - Each image has its own matrix
-    - Matrices shown are **real sub-matrices**
+    ### Teaching Notes
+    - Original image is the base matrix
+    - Brightness uses **matrix addition**
+    - Inversion is **fixed subtraction**
+    - Threshold uses **conditional logic**
+    - All parameters stay within **valid pixel limits**
     """)
